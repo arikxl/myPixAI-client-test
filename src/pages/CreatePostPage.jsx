@@ -16,10 +16,32 @@ const CreatePostPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const shareImg = async (e) => {
+    e.preventDefault();
 
+    if (form.prompt && form.photo) {
+      setIsLoading(true);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/v1/post', {
+          method: 'POST',
+          headers: {
+             'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(form)
+        })
+
+        await response.json();
+        navigate('/')
+      } catch (error) {
+        alert(error)
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      alert('Nothing to share...')
+    }
   }
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -28,9 +50,30 @@ const CreatePostPage = () => {
     const randomPrompt = getRandomPrompt(form.prompt);
     setForm({... form , prompt: randomPrompt})
   }
+  const handleSubmit = async (e) => { 
+    e.preventDefault();
 
-  const generateImg = () => { 
-    
+    if (form.prompt) {
+      try {
+        setIsGenerating(true);
+        const response = await fetch('http://localhost:5000/api/v1/dalle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({prompt: form.prompt})
+        })
+
+        const data = await response.json();
+        setForm({ ...form, photo: `data:image/jpeg;base64,${data.photo}` });
+      } catch (error) {
+        alert(error)
+      } finally {
+        setIsGenerating(false)
+      }
+    } else {
+      alert('What do you want to create?')
+    }
   }
 
   return (
@@ -84,7 +127,8 @@ const CreatePostPage = () => {
           </div>
         </div>
         <div class='mt-5 flex gap-5'>
-          <button type="button" onClick={generateImg}
+          <button type="submit"
+            // onClick={handleSubmit}
             className='text-white bg-[#1dd1a1] font-medium rounded-md text-sm 
             w-full sm:w-auto px-5 py-2.5 text-center'>
               {isGenerating ? 'Generating...' : 'Generate'}
@@ -96,7 +140,7 @@ const CreatePostPage = () => {
           <p className='mt-2 text-[#666e75] text-[14px]'>
             Once you have created the image you want, you can share it with the community.
           </p>
-          <button type='submit'
+          <button type='button' onClick={shareImg}
             className='mt-3 text-white bg-[#55efc4] font-medium rounded-md text-sm 
             w-full sm:w-auto px-5 py-2.5  text-center'>
             {isLoading ? 'Sharing...' : 'Share with the community'}
